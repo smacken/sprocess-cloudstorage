@@ -16,23 +16,25 @@ import (
 	"strings"
 )
 
+var (
+	InvalidBucket           = errors.New("Bucket name is undefined")
+	InvalidGoogleContext    = errors.New("Context is invalid or not provided")
+	InvalidCloudStore       = errors.New("Invalid Cloud store configaration")
+	UnavailableCloudService = errors.New("Google Cloud service is unavailable or configured incorrectly")
+)
+
 type CloudStore struct {
-	Name string
-	// Name of the bucket to store files into
-	Bucket string
-	// The cloud project name
-	Project string
+	Name    string
+	Bucket  string // Name of the bucket to store files into
+	Project string // The cloud project name
 	ctx.Context
-	service *storage.Service
-	insert  *storage.ObjectsInsertCall
-	// the link to the stored file
-	MediaLink string
+	service   *storage.Service
+	insert    *storage.ObjectsInsertCall
+	MediaLink string // the link to the stored file
 	data      *sprocess.Data
-	// file permissions
-	Acl string
-	// optional prefix/suffix to append to each file being saved
-	Prefix string
-	Suffix string
+	Acl       string // file permissions
+	Prefix    string // optional prefix/suffix to append to each file being saved
+	Suffix    string
 }
 
 func (c *CloudStore) GetName() string {
@@ -41,10 +43,10 @@ func (c *CloudStore) GetName() string {
 
 func (cloud *CloudStore) Start() error {
 	if cloud.Bucket == "" {
-		return errors.New("Bucket name is undefined")
+		return InvalidBucket
 	}
 	if cloud.Context == nil {
-		return errors.New("Bucket name is undefined")
+		return InvalidGoogleContext
 	}
 	client := &http.Client{
 		Transport: &oauth2.Transport{
@@ -75,7 +77,7 @@ func (c *CloudStore) NewWriter(id string, d *sprocess.Data) (io.WriteCloser, err
 	f := c.getFileName(id, d)
 	if c.service == nil || c.Bucket == "" {
 		log.Print("no service")
-		return nil, errors.New("Bucket, service is undefined")
+		return nil, InvalidCloudStore
 	}
 	c.insert = c.service.Objects.Insert(c.Bucket, &storage.Object{Name: f})
 	c.data = d
@@ -99,7 +101,7 @@ func (c *CloudStore) getFileName(id string, d *sprocess.Data) string {
 
 func (c *CloudStore) Write(p []byte) (n int, err error) {
 	if c.insert == nil {
-		return 0, errors.New("cloud service is unavailable")
+		return 0, UnavailableCloudService
 	}
 	obj, err := c.insert.Media(bytes.NewReader(p)).PredefinedAcl(c.Acl).Do()
 	if err != nil {

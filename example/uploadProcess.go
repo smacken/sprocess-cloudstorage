@@ -11,6 +11,12 @@ import (
 
 var process *sprocess.HTTP
 
+func main() {
+	e := echo.New()
+	e.Get("/upload", Upload)
+	e.Run(":1323")
+}
+
 func initProcess(r *http.Request) {
 	ctx := appengine.NewContext(r)
 	cloudStoreLarge := &cloudStorage.CloudStore{
