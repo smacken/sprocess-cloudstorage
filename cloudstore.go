@@ -1,4 +1,4 @@
-package main
+package sprocess_cloudstorage
 
 import (
 	"bytes"
